@@ -1,0 +1,94 @@
+---
+# tasks file for anto.docker_centos
+
+#First I install dnf packet manager and python
+    - name: Install dnf and python
+      yum:
+        name: ['dnf', 'python']
+        state: present
+    
+#Now I enable the EPEL repo    
+    - name: Enabling EPEL
+      dnf: 
+        name: epel-release 
+        state: present   
+        
+#Check for any previous docker installation
+    - name: Uninstall previous docker installation
+      dnf:
+        name: |
+          ['docker', 'docker-client', 'docker-client-latest', 'docker-common', 'docker-latest', 
+          'docker-latest-logrotate',   docker-logrotate', 'docker-engine']
+        state: absent     
+
+#I am simply trying the yaml syntax     
+    - name: Trying to install some stuff
+      dnf: 
+        name: ['vim', 'wget'] 
+        state: present
+      when: ansible_distribution == "CentOS"     
+     
+     
+#I referred to the official docker documentation for install docker on CentOS machine
+
+#First I must install the dependencies     
+    - name: Install dependencies for docker
+      dnf: 
+        name: ['yum-utils', 'lvm2', 'device-mapper-persistent-data'] 
+        state: present
+
+#Then I download the official docker-ce repository and adding it in yum.repos.d    
+    - name: Configuring docker-ce repo
+      get_url:
+        url: https://download.docker.com/linux/centos/docker-ce.repo
+        dest: /etc/yum.repos.d/docker-ce.repo
+        mode: 0644
+    
+        
+#Try to install Docker if the WHEN module is satisfied   
+#Ensure that the size of the device is greater than 40GB        
+    - name: Installing docker
+      dnf:
+        name: ['docker-ce', 'docker-ce-cli', 'containerd.io']
+        state: present
+      when: ansible_mounts[1]['block_available'] > 40000000000  
+    
+    - debug:
+        msg: The space is not enough
+      changed_when: true
+      notify: 
+      - Upgrade space
+      - Install docker now    
+    
+#Docker should create the docker group by itself, but i want to be sure creating one by my self
+    - name: Creating a docker group
+      group: 
+        name: docker 
+        state: present
+
+#Now i can add the default user (vagrant) to the docker group so i can use docker without root permission
+    - name: Add the vagrant user to Docker group
+      user: 
+        name: vagrant 
+        groups: docker 
+        append: yes   
+        
+#Starting the docker service on the guest machine
+    - name: Starting and enabling Docker service
+      service: 
+        name: docker 
+        state: started 
+        enabled: yes
+    
+#I install the pip dependencies    
+    - name: Installing latest version of pip and python3
+      dnf:
+        name: ['python3', 'python-pip', 'python-devel', 'python-setuptools', 'gcc']
+        state: latest
+        
+#Finally installing docker-compose using pip3        
+    - name: Installing docker-compose
+      pip:
+        name: docker-compose
+        executable: pip3
+
