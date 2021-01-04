@@ -1,5 +1,5 @@
 ---
-# tasks file for anto.docker_centos
+# tasks file for antoguaro10.ansible_docker_centos
 
 #First I install dnf packet manager and python
     - name: Install dnf and python
@@ -43,6 +43,38 @@
         url: https://download.docker.com/linux/centos/docker-ce.repo
         dest: /etc/yum.repos.d/docker-ce.repo
         mode: 0644
+        
+        
+#Creating a systemd directory on the target machines        
+    - name: Create Docker configuration directories
+      file:
+        path: "{{ item }}"
+        state: directory
+        owner: root
+        group: root
+        mode: 0755
+      loop:
+        - "/etc/docker"
+        - "/etc/systemd/system/docker.service.d"        
+        
+        
+#Copy the dockerdeamon.json file to the target machines
+    - name: Configure Docker daemon options (json)
+      template:
+        src: etc/docker/daemon.json.j2
+        dest: /etc/docker/daemon.json
+        owner: root
+        group: root
+        mode: 0644
+        
+#Copy the systemd service settings in the target machines        
+    - name: Configure Docker daemon options (flags)
+      template:
+        src: etc/systemd/system/docker.service.d/options.conf.j2
+        dest: /etc/systemd/system/docker.service.d/options.conf
+        owner: root
+        group: root
+        mode: 0644          
     
         
 #Try to install Docker if the WHEN module is satisfied   
@@ -55,7 +87,7 @@
     
     - debug:
         msg: The space is not enough
-      changed_when: true
+      changed_when: ansible_mounts[1]['block_available'] < 40000000000
       notify: 
       - Upgrade space
       - Install docker now    
@@ -71,14 +103,12 @@
       user: 
         name: vagrant 
         groups: docker 
-        append: yes   
-        
-#Starting the docker service on the guest machine
-    - name: Starting and enabling Docker service
-      service: 
-        name: docker 
-        state: started 
-        enabled: yes
+        append: yes  
+
+#Restarting systemd daemon   
+    - name: Reload systemd daemon
+      systemd:
+        daemon_reload: true
     
 #I install the pip dependencies    
     - name: Installing latest version of pip and python3

@@ -1,0 +1,10 @@
+# {{ ansible_managed }}
+
+[Unit]
+Description=dockerdaemon for docker service
+StartLimitIntervalSec=0 
+#StartLimitBurst=
+
+[Service]
+ExecStart=
+ExecStart=/usr/bin/dockerd
