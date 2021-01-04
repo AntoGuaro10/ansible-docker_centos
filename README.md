@@ -15,6 +15,12 @@ Ansible role build by me to:
 - Vagrant to create the virtual machines locally
 - Virtualbox as a provider for Vagrant
 
+## Install this role from ansible galaxy
+
+```
+ansible-galaxy install antoguaro10.ansible_docker_centos
+```
+
 ## Example Playbook
 ```
 ---
@@ -26,7 +32,7 @@ Ansible role build by me to:
   become: true
 
   roles:
-    - role: "anto.docker_centos"
+    - role: "antoguaro10.ansible_docker_centos"
 
 ```
 To use the playbook: `ansible-playbook playbook.yml`
